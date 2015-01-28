@@ -302,8 +302,21 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
   return flux;
 }
 
-void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux){
+void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux, double dt){
 
+  double dt_dx = dt/m.dx;
+  std::vector<Euler::U_state>::iterator itflux = flux.begin();
+  
+  for(int i = m.nGhost; i <m.ncells+ m.nGhost;i++){
+
+    m.data[i].rho = m.data[i].rho - dt_dx*((*itflux).rho-((*(itflux+1)).rho));
+    m.data[i].momentum = m.data[i].momentum - dt_dx*((*itflux).momementum - ((*(itflux+1)).momentum));
+    m.data[i].energy = m.data[i].energy - dt_dx*((*itflux).energy-((*(itflux+1)).energy));
+    
+    itflux++;
+
+
+  }
 
 
 }

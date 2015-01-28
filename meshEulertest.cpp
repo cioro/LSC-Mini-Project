@@ -1,4 +1,4 @@
-#include"meshEuler.hpp"
+#include"Mesh.hpp"
 #include"Euler.hpp"
 #include<vector>
 #include<fstream>
@@ -95,9 +95,23 @@ Euler::U_state Exact_solver(double x){
 
 
 int main(){
+  //Parameters of the problem
+ 
+  
+  double x_min = 0, x_max = 1.0; //domain length
+  double cfl = 0.9;
+  double x_0 = 0.5;//Location of discontinuity at time 0
+ 
+  int ncells = 100;
+  int nGhost = 1;
 
+  double dt;
+  double dx;
+  
+  
   //Initialise mesh with reflective BC
-
+  Mesh m(ncells, x_min, x_max, cfl, initial,Refl_Left_Bound, Refl_Right_Bound, nGhost); 
+  
   //Print mesh to file
 
   //Apply BC() function
