@@ -44,20 +44,23 @@ public:
   ~Mesh();
   //print to screen and print to file
   void print()const;
-  void save_u_state(std::string name, Euler::U_state (*exact)(double x), double speed)const;
-  void save_w_state(std::string name, Euler::U_state (*exact)(double x), double speed)const;
+  void save_u_state(std::string name, Euler::U_state (*exact)(double x))const;
+  void save_w_state(std::string name, Euler::U_state (*exact)(double x))const;
  
  //Apply BCs
   void applyBC();
   
   //Calculate dt 
-  double Calculate_dt(Mesh &m);
+  double Calculate_dt();
 
-  //Mesh update
-  void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux);
+  // //Mesh update
+  //  //  void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux,double dt);
 };
 //HLLC method
 std::vector<Euler::U_state> HLLC(Mesh &m);
+
+ //Mesh update
+void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux,double dt);
 
 //TVD WAF
 

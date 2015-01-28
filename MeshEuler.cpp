@@ -11,6 +11,7 @@
 //Initialises the parameters of the grid and fills the vector of primitives with the initial conditions
 Mesh::Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f)(double x), Euler::W_state (*b1)(Mesh &m), Euler::W_state (*b2)(Mesh &m), int nGhost) : ncells(ncells), x_min(x_min),x_max(x_max),cfl(cfl), time(0), boundary1(b1), boundary2(b2), nGhost(nGhost)
  { 
+   ptr_euler = new Euler();
    dx = (x_max-x_min)/(double)ncells;
    
    data.resize(ncells + 2*nGhost);
@@ -33,6 +34,7 @@ Mesh::Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f
 //Destructor
 Mesh::~Mesh()
 {
+  delete ptr_euler;
   /* delete data;
   delete axis;
   delete data2;*/
@@ -55,11 +57,11 @@ void Mesh::print()const
   
 }
 //Print to a file the 1D vector of conserved variables and the exact solution
-void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x), double speed)const
+void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x))const
 {
   
   std::stringstream ss;
-  ss << filename << time;
+  ss << filename <<"_" << time;
   std::string tmppath = ss.str();
   
 
@@ -68,7 +70,7 @@ void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x),
   std::vector<double>::const_iterator itaxis= axis.begin()+nGhost;
   for(int i=1; i<ncells+nGhost; i++)
     {
-      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f \t %.4f \n", *itaxis, (*itdata).rho,(*itdata).momentum,(*itdata).energy, exact(*itaxis -speed*time).rho,exact(*itaxis -speed*time).momentum,exact(*itaxis -speed*time).energy );
+      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f  \n", *itaxis, (*itdata).rho,(*itdata).momentum,(*itdata).energy );
       itaxis++;
       itdata++;
   }
@@ -77,7 +79,7 @@ void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x),
 }
 
 //Prints to a file the 1D vector of primitive variables and the exact solution 
-void Mesh::save_w_state(std::string filename, Euler::U_state (*exact)(double x), double speed)const
+void Mesh::save_w_state(std::string filename, Euler::U_state (*exact)(double x))const
 {
   
   std::stringstream ss;
@@ -106,18 +108,18 @@ void Mesh::save_w_state(std::string filename, Euler::U_state (*exact)(double x),
 //Implements the boundary conditions. The actual boundary condition function should be in the main file
 void Mesh::applyBC(){
   
-  Euler::W_state w_Left_End = ptr_euler -> PfromC(data[0]);
+  Euler::W_state w_Left_End = ptr_euler -> PfromC(data[nGhost]);
   Euler::W_state w_BC_Left = boundary1(*this);
   data[0]= ptr_euler -> CfromP(w_BC_Left);
 
-  Euler::W_state w_Right_End = ptr_euler -> PfromC(data[ncells+nGhost]);
+  Euler::W_state w_Right_End = ptr_euler -> PfromC(data[ncells]);
   Euler::W_state w_BC_Right = boundary2(*this);
-  data[0]= ptr_euler -> CfromP(w_BC_Right);
+  data[ncells+nGhost]= ptr_euler -> CfromP(w_BC_Right);
   
 }
 
 //Calculates the adquate size of the time step dt. See page 183 from Toro(ed.2009)
-double Mesh::Calculate_dt(Mesh &m){
+double Mesh::Calculate_dt(){
   std::vector<Euler::U_state>::iterator itdata = data.begin()+nGhost;
   double speed=0.0;
   double speedtemp=0.0;
@@ -125,7 +127,7 @@ double Mesh::Calculate_dt(Mesh &m){
   for(int i=0; i<nGhost+ncells;i++){
     Euler::W_state w = ptr_euler->PfromC(*itdata);
     speedtemp = ptr_euler->a(w);
-    if(abs(speedtemp) > abs(speed)){
+    if(fabs(speedtemp) > fabs(speed)){
       speed = speedtemp;
     }          
     itdata++;
@@ -133,6 +135,7 @@ double Mesh::Calculate_dt(Mesh &m){
 
   double dt;
   dt=(cfl*dx)/speed;
+  return dt;
 }
 
 //HLLC flux calculator (this is a free function not a member function of class Mesh)

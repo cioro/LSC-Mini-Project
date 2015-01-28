@@ -1,12 +1,15 @@
 #ifndef EULER_H
 #define EULER_H
-
+/*
+namespace {
+static const double GAMMA = 0.15;
+}*/
 
 class Euler{
 
 public:
   //Data members
-  double gamma = 1.4;
+  const double gamma = 1.4;
   
   struct W_state{
     double rho;
