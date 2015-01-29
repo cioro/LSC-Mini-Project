@@ -124,7 +124,7 @@ double Mesh::Calculate_dt(){
   double speed=0.0;
   double speedtemp=0.0;
     
-  for(int i=0; i<nGhost+ncells;i++){
+  for(int i=nGhost; i<nGhost+ncells;i++){
     Euler::W_state w = ptr_euler->PfromC(*itdata);
     speedtemp = ptr_euler->a(w);
     if(fabs(speedtemp) > fabs(speed)){
@@ -141,6 +141,7 @@ double Mesh::Calculate_dt(){
 //HLLC flux calculator (this is a free function not a member function of class Mesh)
 //Check Toro(ed.2009) p.331 for summary of HLLC method
 std::vector<Euler::U_state> HLLC(Mesh &m){
+ 
   //Total vector of fluxes
   std::vector<Euler::U_state> flux(m.ncells+1);
   
@@ -175,6 +176,9 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
   double star_coef_right; // The coeficient in eq. 10.73 from Toro(ed.2009);
   
   std::vector<Euler::U_state>::iterator itflux = flux.begin();
+  
+  // m.data[m.nGhost].print();
+  // m.data[0].print();
 
   //Loop over whole domain
   for(int i = m.nGhost-1; i < m.ncells+m.nGhost; i++){
@@ -202,14 +206,15 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     a_L =m.ptr_euler->a(W_L);
     a_R = m.ptr_euler->a(W_R);
 
-    
+    std::cout <<"Inside the HLLC function" << "\n";
+        
     rho_bar = 0.5*(rho_L + rho_R);
     a_bar = 0.5*(a_L + a_R);
 
-    P_pvrs = 0.5*(P_L + P_R)+0.5*(u_R+u_L)*rho_bar*a_bar;
+    P_pvrs = 0.5*(P_L + P_R)-0.5*(u_R-u_L)*rho_bar*a_bar;
 
     P_star = std::max(0.0,P_pvrs);
-
+      
     //---------------------------------------------------
    
     //----------Wave speed estimate----------------------
@@ -222,7 +227,7 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     else{
       q_R = sqrt(1 + ((gamma+1)/(2*gamma))*((P_star/P_R)-1));
     }
-
+        
     //Calculate q_L
     if(P_star <= P_L){
       q_L = 1.0;
@@ -232,8 +237,8 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     }
  
     //Calculate S_R and S_L
-    S_L = u_L -a_L*q_L;
-    S_R = u_R -a_R*q_R;
+    S_L = u_L - a_L*q_L;
+    S_R = u_R + a_R*q_R;
     
     double numerator = P_R - P_L + rho_L*u_L*(S_L-u_L) - rho_R*u_R*(S_R-u_R); 
     double denominator = rho_L*(S_L-u_L)-rho_R*(S_R-u_R);
@@ -306,14 +311,15 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
 }
 
 void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux, double dt){
+ 
   double dt_dx = dt/m.dx;
   std::vector<Euler::U_state>::iterator itflux = flux.begin();
   
   for(int i = m.nGhost; i <m.ncells+ m.nGhost;i++){
 
-    m.data[i].rho = m.data[i].rho - dt_dx*((*itflux).rho-((*(itflux+1)).rho));
-    m.data[i].momentum = m.data[i].momentum - dt_dx*((*itflux).momentum - ((*(itflux+1)).momentum));
-    m.data[i].energy = m.data[i].energy - dt_dx*((*itflux).energy-((*(itflux+1)).energy));
+    m.data[i].rho = m.data[i].rho - dt_dx*((*(itflux+1)).rho-((*itflux).rho));
+    m.data[i].momentum = m.data[i].momentum - dt_dx*((*(itflux+1)).momentum - (*itflux).momentum);
+    m.data[i].energy = m.data[i].energy - dt_dx*((*(itflux+1)).energy-((*itflux).energy));
     
     itflux++;
 

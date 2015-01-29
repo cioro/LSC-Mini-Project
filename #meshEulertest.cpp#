@@ -180,6 +180,7 @@ int main(){
     // std::cout << flux[j].rho << "\t" << flux[j].momentum << "\t" << flux[j].energy << "\n";
       
       // }
+
     std::cout << "\n "; 
     Mesh_update(m,flux,dt);
    
