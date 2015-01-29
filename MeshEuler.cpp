@@ -206,7 +206,7 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     a_L =m.ptr_euler->a(W_L);
     a_R = m.ptr_euler->a(W_R);
 
-    std::cout <<"Inside the HLLC function" << "\n";
+    //std::cout <<"Inside the HLLC function" << "\n";
         
     rho_bar = 0.5*(rho_L + rho_R);
     a_bar = 0.5*(a_L + a_R);

@@ -75,13 +75,17 @@ Euler::U_state initial(double x){
   //Should do this assert(x_0 < x_max && x_0 > x_min); to avoid errors
   //but I would have to add to more args to the fcn.
 
+  Euler e;//To allow use of CfromP and the creation of wl and ul. Not good design.
+  
   if (x<=x_0){
     
-    Euler::U_state uL(1.0,0.75,1.0);
+    const Euler::W_state wL(1.0,0.75,1.0);
+    Euler::U_state uL = e.CfromP(wL);
     return uL;
   }
   if (x>x_0){
-    Euler::U_state uR(0.125,0.0,0.1);
+    const Euler::W_state wR(0.125,0.0,0.1);
+    Euler::U_state uR = e.CfromP(wR);
     return uR;
   }
   else{
@@ -107,7 +111,7 @@ int main(){
  
   
   double x_min = 0, x_max = 1.0; //domain length
-  double cfl = 0.9;
+  double cfl = 0.2;
  
  
   int ncells = 100;
@@ -171,15 +175,14 @@ int main(){
     std::cout <<"dt " << dt <<" The time is "<< i << "\n";
     flux = HLLC(m);
     
-    for( std::vector<Euler::U_state>::iterator itflux = flux.begin(); itflux!=flux.end(); itflux++){
-    std::cout << (*itflux).rho << "\t" << (*itflux).momentum << "\t" << (*itflux).energy << "\n";
-    }
+    //for( std::vector<Euler::U_state>::iterator itflux = flux.begin(); itflux!=flux.end(); itflux++){
+    //std::cout << (*itflux).rho << "\t" << (*itflux).momentum << "\t" << (*itflux).energy << "\n";
+    // }
 
-    // for(int j = 29; j < 33; j++){
-      
-    // std::cout << flux[j].rho << "\t" << flux[j].momentum << "\t" << flux[j].energy << "\n";
-      
-      // }
+     for(int j = 29; j < 33; j++){
+          std::cout << flux[j].rho << "\t" << flux[j].momentum << "\t" << flux[j].energy << "\n";
+       }
+
     std::cout << "\n "; 
     Mesh_update(m,flux,dt);
    
