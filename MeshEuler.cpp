@@ -59,9 +59,9 @@ void Mesh::print()const
 //Print to a file the 1D vector of conserved variables and the exact solution
 void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x))const
 {
-  
+  std::string dir = "data/";
   std::stringstream ss;
-  ss << filename <<"_" << time;
+  ss << dir << filename <<"_" << time;
   std::string tmppath = ss.str();
   
 
@@ -70,7 +70,7 @@ void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x))
   std::vector<double>::const_iterator itaxis= axis.begin()+nGhost;
   for(int i=1; i<ncells+nGhost; i++)
     {
-      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f  \n", *itaxis, (*itdata).rho,(*itdata).momentum,(*itdata).energy );
+      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f \t %.4f  \n", *itaxis, (*itdata).rho,(*itdata).momentum,(*itdata).energy,ptr_euler->int_energy(ptr_euler->PfromC((*itdata)) ));
       itaxis++;
       itdata++;
   }
@@ -81,9 +81,9 @@ void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x))
 //Prints to a file the 1D vector of primitive variables and the exact solution 
 void Mesh::save_w_state(std::string filename, Euler::U_state (*exact)(double x))const
 {
-  
+  std::string dir = "data/";
   std::stringstream ss;
-  ss << filename << time;
+  ss << dir << filename << time;
   std::string tmppath = ss.str();
   
 
@@ -97,7 +97,7 @@ void Mesh::save_w_state(std::string filename, Euler::U_state (*exact)(double x))
       Euler::W_state w_print_approx = ptr_euler->PfromC(*itdata);
       //Euler::W_state w_print_exact = ptr_euler->PfromC(*itaxis);
       
-      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f \n", *itaxis, w_print_approx.rho,w_print_approx.u,w_print_approx.P );
+      fprintf(outfile, "%.4f \t %.4f \t %.4f \t %.4f \t %.4f \n", *itaxis, w_print_approx.rho,w_print_approx.u,w_print_approx.P, ptr_euler->int_energy(ptr_euler->PfromC((*itdata)) ) );
       itaxis++;
       itdata++;
   }
@@ -134,6 +134,18 @@ double Mesh::Calculate_dt(){
   }
 
   double dt;
+  //If time < 5 then dt = 0.2
+  if(time < 10){
+    double  cfl_init = 0.2;
+    dt=(cfl_init*dx)/speed;
+    
+    std::cout << "Inside calculate dt function, cfl = " << cfl_init << "\n"; 
+
+    return dt;
+
+  }
+  std::cout << "Inside calculate dt function, cfl = " << cfl << "\n";
+
   dt=(cfl*dx)/speed;
   return dt;
 }
@@ -206,7 +218,7 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     a_L =m.ptr_euler->a(W_L);
     a_R = m.ptr_euler->a(W_R);
 
-    //std::cout <<"Inside the HLLC function" << "\n";
+    // std::cout <<"Inside the HLLC function" << "\n";
         
     rho_bar = 0.5*(rho_L + rho_R);
     a_bar = 0.5*(a_L + a_R);
@@ -237,7 +249,7 @@ std::vector<Euler::U_state> HLLC(Mesh &m){
     }
  
     //Calculate S_R and S_L
-    S_L = u_L - a_L*q_L;
+    S_L = u_L -a_L*q_L;
     S_R = u_R + a_R*q_R;
     
     double numerator = P_R - P_L + rho_L*u_L*(S_L-u_L) - rho_R*u_R*(S_R-u_R); 

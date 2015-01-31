@@ -69,7 +69,7 @@ Euler::W_state Trans_Right_Bound(Mesh &m){
 }
 //Initial condition function
 
-Euler::U_state initial(double x){
+Euler::U_state initial_Sod(double x){
 
   const double x_0 = 0.3;
   //Should do this assert(x_0 < x_max && x_0 > x_min); to avoid errors
@@ -95,6 +95,54 @@ Euler::U_state initial(double x){
   }
 }
 
+Euler::U_state initial_123(double x){
+  
+  const double x_0 = 0.5;
+  
+  Euler e;
+
+ if (x<=x_0){
+    
+    const Euler::W_state wL(1.0,-2.0,0.4);
+    Euler::U_state uL = e.CfromP(wL);
+    return uL;
+  }
+  if (x>x_0){
+    const Euler::W_state wR(1.0,2.0,0.4);
+    Euler::U_state uR = e.CfromP(wR);
+    return uR;
+  }
+  else{
+    std::cout<<"Something went wrong inside inital function in main.cpp"<<std::endl;
+    Euler::U_state u;
+    return u;
+  }
+}
+
+Euler::U_state initial_test3(double x){
+  
+  const double x_0 = 0.5;
+  
+  Euler e;
+
+ if (x<=x_0){
+    
+    const Euler::W_state wL(1.0,0.0,1000.0);
+    Euler::U_state uL = e.CfromP(wL);
+    return uL;
+  }
+  if (x>x_0){
+    const Euler::W_state wR(1.0,0.0,0.01);
+    Euler::U_state uR = e.CfromP(wR);
+    return uR;
+  }
+  else{
+    std::cout<<"Something went wrong inside inital function in main.cpp"<<std::endl;
+    Euler::U_state u;
+    return u;
+  }
+
+}
 
 //Exact riemann solver function
 
@@ -123,7 +171,7 @@ int main(){
   double T_max = 0.2;
     
   //Initialise mesh with reflective BC
-  Mesh m(ncells, x_min, x_max, cfl, initial, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
+  Mesh m(ncells, x_min, x_max, cfl, initial_test3, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
   
   //Print mesh to file
   std::string file_init = "initial_u";
