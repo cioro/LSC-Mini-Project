@@ -69,7 +69,7 @@ Euler::W_state Trans_Right_Bound(Mesh &m){
 }
 //Initial condition function
 
-Euler::U_state initial_Sod(double x){
+Euler::U_state initial_test1(double x){
 
   const double x_0 = 0.3;
   //Should do this assert(x_0 < x_max && x_0 > x_min); to avoid errors
@@ -95,7 +95,7 @@ Euler::U_state initial_Sod(double x){
   }
 }
 
-Euler::U_state initial_123(double x){
+Euler::U_state initial_test2(double x){
   
   const double x_0 = 0.5;
   
@@ -144,6 +144,59 @@ Euler::U_state initial_test3(double x){
 
 }
 
+
+Euler::U_state initial_test4(double x){
+  
+  const double x_0 = 0.4;
+  
+  Euler e;
+
+ if (x<=x_0){
+    
+    const Euler::W_state wL(5.99924,19.5975,460.894);
+    Euler::U_state uL = e.CfromP(wL);
+    return uL;
+  }
+  if (x>x_0){
+    const Euler::W_state wR(5.99242,-6.19633,46.0950);
+    Euler::U_state uR = e.CfromP(wR);
+    return uR;
+  }
+  else{
+    std::cout<<"Something went wrong inside inital function in main.cpp"<<std::endl;
+    Euler::U_state u;
+    return u;
+  }
+
+}
+
+
+Euler::U_state initial_test5(double x){
+  
+  const double x_0 = 0.8;
+  
+  Euler e;
+
+ if (x<=x_0){
+    
+    const Euler::W_state wL(1.0,-19.59745,1000.0);
+    Euler::U_state uL = e.CfromP(wL);
+    return uL;
+  }
+  if (x>x_0){
+    const Euler::W_state wR(1.0,-19.59745,0.01);
+    Euler::U_state uR = e.CfromP(wR);
+    return uR;
+  }
+  else{
+    std::cout<<"Something went wrong inside inital function in main.cpp"<<std::endl;
+    Euler::U_state u;
+    return u;
+  }
+
+}
+
+
 //Exact riemann solver function
 
 Euler::U_state Exact_solver(double x){
@@ -159,7 +212,7 @@ int main(){
  
   
   double x_min = 0, x_max = 1.0; //domain length
-  double cfl = 0.2;
+  double cfl = 0.8;
  
  
   int ncells = 100;
@@ -168,10 +221,10 @@ int main(){
   double dt;
   // double dx;
 
-  double T_max = 0.2;
+  double T_max = 0.15;
     
   //Initialise mesh with reflective BC
-  Mesh m(ncells, x_min, x_max, cfl, initial_test3, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
+  Mesh m(ncells, x_min, x_max, cfl, initial_test2, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
   
   //Print mesh to file
   std::string file_init = "initial_u";

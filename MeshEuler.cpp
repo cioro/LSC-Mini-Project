@@ -126,7 +126,7 @@ double Mesh::Calculate_dt(){
     
   for(int i=nGhost; i<nGhost+ncells;i++){
     Euler::W_state w = ptr_euler->PfromC(*itdata);
-    speedtemp = ptr_euler->a(w);
+    speedtemp = ptr_euler->a(w) + fabs(w.u);
     if(fabs(speedtemp) > fabs(speed)){
       speed = speedtemp;
     }          
