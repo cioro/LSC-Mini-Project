@@ -212,7 +212,7 @@ int main(){
  
   
   double x_min = 0, x_max = 1.0; //domain length
-  double cfl = 0.8;
+  double cfl = 0.9;
  
  
   int ncells = 100;
@@ -221,10 +221,10 @@ int main(){
   double dt;
   // double dx;
 
-  double T_max = 0.15;
+  double T_max = 0.012;
     
   //Initialise mesh with reflective BC
-  Mesh m(ncells, x_min, x_max, cfl, initial_test2, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
+  Mesh m(ncells, x_min, x_max, cfl, initial_test5, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
   
   //Print mesh to file
   std::string file_init = "initial_u";

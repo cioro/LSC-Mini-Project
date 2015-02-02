@@ -340,5 +340,270 @@ void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux, double dt){
 
 
 
+}
+
+std::vector<Euler::U_state> WAF(Mesh &m, double dt){
+ 
+  //Total vector of fluxes
+  std::vector<Euler::U_state> flux(m.ncells+1);
+  
+  double gamma = m.ptr_euler->gamma;
+  //Variables used
+
+  double P_star,P_L,P_R; //Presures
+  double rho_star,rho_L,rho_R;//densities
+  double u_L,u_R;//particle/gas speed in cell
+
+  double a_L, a_R;// sound speed in cell
+  double S_L, S_R,S_star;// wave speed in cell left wave, right wave, contact wave
+
+  Euler::U_state U_star_L, U_star_R; // Star states of conserved var
+  
+  double P_pvrs;
+  double rho_bar, a_bar;//average density and average sound speed of left and right cells
+
+  Euler::W_state w_temp_left;
+  Euler::W_state w_temp_right;
+
+  double q_R,q_L;
+
+  Euler::U_state U_state_L;
+  Euler::U_state U_state_R;
+  Euler::W_state W_L;
+  Euler::W_state W_R;
+  Euler::U_state U_state_L_star;
+  Euler::U_state U_state_R_star;
+
+  double star_coef_left; // The coeficient in eq. 10.73 from Toro(ed.2009); (S_k-u_k)/(S_k-u_star_k);
+  double star_coef_right; // The coeficient in eq. 10.73 from Toro(ed.2009);
+  
+  std::vector<Euler::U_state>::iterator itflux = flux.begin();
+
+  //Courant number for each wave speed
+  double c_L,c_star,c_R;
+  double c_0 = -1;
+  double c_NplusOne = 1;
+
+  //Ratio for each wave speed
+  double r_L,r_star,r_R;
+  double delta_q, delta_q_up, delta_q_down;
+
+  //Limiter functions
+  double minmod_l,minmod_star,minmod_r;
+  double superbee_l,superbee_star,superbee_r;
+  
+  // m.data[m.nGhost].print();
+  // m.data[0].print();
+
+  //Loop over whole domain
+  for(int i = m.nGhost-1; i < m.ncells+m.nGhost; i++){
+    
+    //Select U_state and initialise W_state
+
+    U_state_L = m.data[i];
+    U_state_R = m.data[i+1];
+
+    W_L = m.ptr_euler->PfromC(U_state_L);
+    W_R = m.ptr_euler->PfromC(U_state_R);
+
+
+    //---------Pressure estimate-------------------------
+
+    P_L = W_L.P;
+    P_R = W_R.P;
+
+    u_L = W_L.u;
+    u_R = W_R.u;
+
+    rho_L = W_L.rho;
+    rho_R = W_R.rho;
+   
+    a_L =m.ptr_euler->a(W_L);
+    a_R = m.ptr_euler->a(W_R);
+
+    // std::cout <<"Inside the HLLC function" << "\n";
+        
+    rho_bar = 0.5*(rho_L + rho_R);
+    a_bar = 0.5*(a_L + a_R);
+
+    P_pvrs = 0.5*(P_L + P_R)-0.5*(u_R-u_L)*rho_bar*a_bar;
+
+    P_star = std::max(0.0,P_pvrs);
+      
+    //---------------------------------------------------
+   
+    //----------Wave speed estimate----------------------
+    
+    //Calculate q_R
+
+    if(P_star <= P_R){
+      q_R = 1.0;
+    }
+    else{
+      q_R = sqrt(1 + ((gamma+1)/(2*gamma))*((P_star/P_R)-1));
+    }
+        
+    //Calculate q_L
+    if(P_star <= P_L){
+      q_L = 1.0;
+    }
+    else{
+      q_L = sqrt(1 + ((gamma+1)/(2*gamma))*((P_star/P_L)-1));
+    }
+ 
+    //Calculate S_R and S_L
+    S_L = u_L -a_L*q_L;
+    S_R = u_R + a_R*q_R;
+    
+    double numerator = P_R - P_L + rho_L*u_L*(S_L-u_L) - rho_R*u_R*(S_R-u_R); 
+    double denominator = rho_L*(S_L-u_L)-rho_R*(S_R-u_R);
+
+    S_star = numerator/denominator; 
+
+    //---------------------------------------------------
+
+    //---------------HLLC fluxes -------------------------------------------------//
+
+    //Calculate F_L     
+      Euler::U_state F_L;
+      F_L = m.ptr_euler->flux(U_state_L);
+       
+
+     //Calculate F_L_star
+      Euler::U_state F_L_star;
+      star_coef_left = rho_L*((S_L-u_L)/(S_L-S_star));
+      
+      //---Calculate U_state_L_star
+      U_state_L_star.rho = star_coef_left;
+      U_state_L_star.momentum = star_coef_left*S_star;
+      U_state_L_star.energy = star_coef_left*(U_state_L.energy/U_state_L.rho + (S_star - u_L)*(S_star + P_L/(rho_L*(S_L-u_L))));
+      /* Consider overloading the + operator to write this in one line */
+      F_L_star.rho = F_L.rho + S_L*(U_state_L_star.rho -U_state_L.rho);
+      F_L_star.momentum = F_L.momentum + S_L*(U_state_L_star.momentum -U_state_L.momentum);
+      F_L_star.energy = F_L.energy + S_L*(U_state_L_star.energy -U_state_L.energy);
+   
+      //Calculate F_R
+      Euler::U_state F_R;
+      F_R = m.ptr_euler->flux(U_state_R);
+     					
+
+      //Calculate F_R_star
+      Euler::U_state F_R_star;
+      star_coef_right = rho_R*((S_R-u_R)/(S_R-S_star));
+      
+      //Calculate U_state_R_star
+      U_state_R_star.rho = star_coef_right;
+      U_state_R_star.momentum = star_coef_right*S_star;
+      U_state_R_star.energy = star_coef_right*(U_state_R.energy/U_state_R.rho + (S_star - u_R)*(S_star + P_R/(rho_L*(S_R-u_R))));
+
+
+      /* Consider overloading the + operator to write this in one line */
+      F_R_star.rho = F_R.rho + S_R*(U_state_R_star.rho -U_state_R.rho);
+      F_R_star.momentum = F_R.momentum + S_R*(U_state_R_star.momentum -U_state_R.momentum);
+      F_R_star.energy = F_R.energy + S_R*(U_state_R_star.energy -U_state_R.energy);
+
+      //---------------END of HLLC Fluxes, F_L, F_L_star, F_R, F_R_star------------------//
+
+
+      //Compute the courant number
+      c_L = dt*S_L/m.dx;
+      c_star = dt*S_star/m.dx;
+      c_R = dt*S_R/m.dx;
+
+      //Compute the ratios
+      //-----compute delta_q, delta_q_up, delta_q_down
+      delta_q = m.data[i+1].rho - m.data[i].rho;
+      delta_q_up = m.data[i+2].rho-m.data[i+1].rho;
+      delta_q_down = m.data[i-1].rho-m.data[i].rho;
+
+      if (c_L > 0){
+	r_L = delta_q_up/delta_q;
+      }
+      else{
+	r_L = delta_q_down/delta_q;
+      }
+     
+      if (c_star > 0){
+	r_star = delta_q_up/delta_q;
+      }
+      else{
+	r_star = delta_q_down/delta_q;
+      }
+     
+      if (c_R > 0){
+	r_R = delta_q_up/delta_q;
+      }
+      else{
+	r_R = delta_q_down/delta_q;
+      }
+     
+      //Compute limiter functions
+      minmod_l = minmod(r_L,fabs(c_L));
+      minmod_star = minmod(r_star, fabs(c_star));
+      minmod_r = minmod(r_R,fabs(c_R));
+
+      superbee_l = superbee(r_L, fabs(c_L));
+      superbee_star = superbee(r_star, fabs(c_star));
+      superbee_r = superbee(r_R, fabs(c_R));
+
+      
+      //Compute intercell flux at i+1/2 (*itflux).rho, (*itflux).momentum, (*itflux).energy
+      //For 1D N= 3, total number of waves
+      (*itflux).rho = 0.5*(F_L.rho + F_R.rho) - 0.5* (sign(c_L)*minmod_l*(F_L_star.rho-F_L.rho) + \
+						     sign(c_star)*minmod_star*(F_R_star.rho-F_L_star.rho) + \
+						     sign(c_R)*minmod_r*(F_R.rho-F_R_star.rho));
+
+      (*itflux).momentum = 0.5*(F_L.momentum + F_R.momentum) - 0.5* (sign(c_L)*minmod_l*(F_L_star.momentum-F_L.momentum) + \
+						     sign(c_star)*minmod_star*(F_R_star.momentum-F_L_star.momentum) + \
+						     sign(c_R)*minmod_r*(F_R.momentum-F_R_star.momentum));
+						     
+      (*itflux).energy = 0.5*(F_L.energy + F_R.energy) - 0.5* (sign(c_L)*minmod_l*(F_L_star.energy-F_L.energy) + \
+						     sign(c_star)*minmod_star*(F_R_star.energy-F_L_star.energy) + \
+						     sign(c_R)*minmod_r*(F_R.energy-F_R_star.energy));
+
+
+
+
+    itflux++;
+  }
+
+  return flux;
+}
+
+int sign(double c){
+  
+  if(c >= 0){
+    return 1;
+  }
+  else{
+    return -1;
+  }
+
+}
+double minmod(double r, double c){
+  if (r <= 0.0){
+    return 1.0;
+  }
+  if( r >= 0 && r <= 1.0){
+    return (1-(1-c)*r);
+  }
+  if (r > 1 ){
+    return c;
+  }
+  else{
+    std::cout  << "Error in minmod limiter calculation " << "\n";
+    return 0;
+  }
+}
+
+double superbee(double r, double c){
+
+  if(r <= 0){
+    return 1;
+  }
+  else{
+    double top = (1-c)*r*(1+r);
+    return (1 - top/(1-r));
+  }
 
 }

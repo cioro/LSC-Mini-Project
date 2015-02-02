@@ -59,10 +59,17 @@ public:
 //HLLC method
 std::vector<Euler::U_state> HLLC(Mesh &m);
 
+//TVD WAF
+std::vector<Euler::U_state> WAF(Mesh &m);
+
+//Limiter fcns
+double minmod(double r, double c);
+double superbee(double r, double c);
+
+int sign(double c);
+
  //Mesh update
 void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux,double dt);
 
-//TVD WAF
 
-//Limiter
 #endif
