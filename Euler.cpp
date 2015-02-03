@@ -30,6 +30,10 @@ return 0;
 }
 
 double Euler::a(const Euler::W_state& w){
+  if(w.P < 0.0 || w.rho < 0.0){
+    std::cout << "Error speed  of sound can't be computed. Negative pressure or density" << "\n";
+    w.print();
+      }
   double a_result = sqrt(gamma*(w.P)/(w.rho));
   return a_result;
 }

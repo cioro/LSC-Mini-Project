@@ -7,63 +7,50 @@
 #include<string>
 
 //Reflective boundary function
-Euler::W_state Refl_Left_Bound(Mesh &m){
+Euler::W_state Refl_Left_Bound(Euler::W_state w){
  
-  Euler::W_state w_left_end = m.ptr_euler-> PfromC(m.data[m.nGhost]);
- 
-  //std::cout <<"This is the inside of Refl_Left_Bound, first the value of U and then W" << "\n";
-  // m.data[0].print();
-  // w_left_end.print();
- 
+     
   Euler::W_state w_result;
   
-  w_result.rho =   w_left_end.rho;
-  w_result.u   = - w_left_end.u;
-  w_result.P   =   w_left_end.P;
+  w_result.rho =   w.rho;
+  w_result.u   = - w.u;
+  w_result.P   =   w.P;
 
   return w_result;
 }
 
-Euler::W_state Refl_Right_Bound(Mesh &m){
+Euler::W_state Refl_Right_Bound(Euler::W_state w ){
  
-  Euler::W_state w_right_end = m.ptr_euler-> PfromC(m.data[m.ncells]);
-  
-  Euler::W_state w_result;
-  
-  w_result.rho =   w_right_end.rho;
-  w_result.u   = - w_right_end.u;
-  w_result.P   =   w_right_end.P;
+ Euler::W_state w_result;  
+
+  w_result.rho =   w.rho;
+  w_result.u   = - w.u;
+  w_result.P   =   w.P;
 
   return w_result;
 }
 
 //Transmissive boundary function
-Euler::W_state Trans_Left_Bound(Mesh &m){
+Euler::W_state Trans_Left_Bound(Euler::W_state w){
  
-  Euler::W_state w_left_end = m.ptr_euler-> PfromC(m.data[m.nGhost]);
-  // std::cout <<"This is the inside of Trans_Left_Bound, first the value of U and then W" << "\n";
-  // m.data[0].print();
-  //w_left_end.print();
-
-  Euler::W_state w_result;
-  
-  w_result.rho =  w_left_end.rho;
-  w_result.u   =  w_left_end.u;
-  w_result.P   =  w_left_end.P;
+ Euler::W_state w_result;
+   
+  w_result.rho =  w.rho;
+  w_result.u   =  w.u;
+  w_result.P   =  w.P;
 
   return w_result;
 }
 
 
-Euler::W_state Trans_Right_Bound(Mesh &m){
+Euler::W_state Trans_Right_Bound(Euler::W_state w){
  
-  Euler::W_state w_right_end = m.ptr_euler-> PfromC(m.data[m.ncells]);
   
   Euler::W_state w_result;
   
-  w_result.rho =   w_right_end.rho;
-  w_result.u   =   w_right_end.u;
-  w_result.P   =   w_right_end.P;
+  w_result.rho =   w.rho;
+  w_result.u   =   w.u;
+  w_result.P   =   w.P;
 
   return w_result;
 }
@@ -79,7 +66,7 @@ Euler::U_state initial_test1(double x){
   
   if (x<=x_0){
     
-    const Euler::W_state wL(1.0,0.75,1.0);
+    const Euler::W_state wL(1.0,0.0,1.0);
     Euler::U_state uL = e.CfromP(wL);
     return uL;
   }
@@ -212,11 +199,11 @@ int main(){
  
   
   double x_min = 0, x_max = 1.0; //domain length
-  double cfl = 0.9;
+  double cfl = 0.2;
  
  
   int ncells = 100;
-  int nGhost = 1;
+  int nGhost = 2;
 
   double dt;
   // double dx;
@@ -224,7 +211,7 @@ int main(){
   double T_max = 0.012;
     
   //Initialise mesh with reflective BC
-  Mesh m(ncells, x_min, x_max, cfl, initial_test5, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
+  Mesh m(ncells, x_min, x_max, cfl, initial_test1, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
   
   //Print mesh to file
   std::string file_init = "initial_u";
@@ -269,13 +256,13 @@ int main(){
   std::vector<Euler::U_state> flux(m.ncells+1);
  
   
-  for(double i = m.time; i<T_max; i+=dt){
+  for(double i = 0; i<T_max; i+=dt){
     
     m.applyBC();
     dt = m.Calculate_dt();
     std::cout <<"dt " << dt <<" The time is "<< i << "\n";
-    flux = HLLC(m);
-    
+    // flux = HLLC(m);
+    flux = WAF(m,dt);
     //for( std::vector<Euler::U_state>::iterator itflux = flux.begin(); itflux!=flux.end(); itflux++){
     //std::cout << (*itflux).rho << "\t" << (*itflux).momentum << "\t" << (*itflux).energy << "\n";
     // }
@@ -294,4 +281,7 @@ int main(){
   }
   std::string output = "Output";
   m.save_w_state(output,Exact_solver);
+  
+
+
 }

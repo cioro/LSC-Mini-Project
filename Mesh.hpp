@@ -31,8 +31,8 @@ public:
   double cfl;
   
   //Boundary functions
-  Euler::W_state (*boundary1)(Mesh& m);
-  Euler::W_state (*boundary2)(Mesh& m);
+  Euler::W_state (*boundary1)(Euler::W_state  w);
+  Euler::W_state (*boundary2)(Euler::W_state  w);
   int nGhost;
 
    //Data
@@ -40,7 +40,7 @@ public:
   std::vector<Euler::U_state> data2;
 
   //Constructor
-  Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f)(double x),Euler::W_state (*b1)(Mesh &m), Euler::W_state (*b2)(Mesh &m), int nGhost);
+  Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f)(double x),Euler::W_state (*b1)(Euler::W_state w), Euler::W_state (*b2)(Euler::W_state w), int nGhost);
   ~Mesh();
   //print to screen and print to file
   void print()const;
@@ -59,9 +59,10 @@ public:
 //HLLC method
 std::vector<Euler::U_state> HLLC(Mesh &m);
 
-//TVD WAF
-std::vector<Euler::U_state> WAF(Mesh &m);
 
+//TVD WAF
+std::vector<Euler::U_state> WAF(Mesh &m,double dt);
+std::vector<Euler::U_state> HLLC_U_state(Euler::U_state U_state_L, Euler::U_state U_state_R);
 //Limiter fcns
 double minmod(double r, double c);
 double superbee(double r, double c);
