@@ -1,6 +1,6 @@
 set term postscript enhanced colour size 10,7
 
-do for [filename in "Snap0 Snap10  Snap20 Snap60 Snap90"]{
+do for [filename in "Snap0 Snap10  Snap20 Snap59"]{
 set output filename.".eps"
 
 set xrange [ 0.0 : 1.0 ]

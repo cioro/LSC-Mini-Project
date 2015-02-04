@@ -1,6 +1,6 @@
 set term postscript enhanced colour size 10,7
 
-do for [filename in "Snap0 Snap10  Snap20 Snap60 Snap63"]{
+do for [filename in "Snap0 Snap10 Snap20 Snap30 Snap40 Snap50 Snap67 "]{
 set output filename.".eps"
 
 set xrange [ 0.0 : 1.0 ]
@@ -40,7 +40,7 @@ set tmargin 1
 plot filename u 1:4 w p pt 19
 
 set ylabel "internal energy"
-set yrange [ 1.8 : 3.8 ]
+set yrange [ 0.0 : 3.8 ]
 set size 0.5,0.45
 set xlabel "position"
 set origin 0.5,0.05

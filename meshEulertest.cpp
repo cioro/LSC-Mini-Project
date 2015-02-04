@@ -58,7 +58,7 @@ Euler::W_state Trans_Right_Bound(Euler::W_state w){
 
 Euler::U_state initial_test1(double x){
 
-  const double x_0 = 0.3;
+  const double x_0 = 0.5;
   //Should do this assert(x_0 < x_max && x_0 > x_min); to avoid errors
   //but I would have to add to more args to the fcn.
 
@@ -199,7 +199,7 @@ int main(){
  
   
   double x_min = 0, x_max = 1.0; //domain length
-  double cfl = 0.2;
+  double cfl = 0.9;
  
  
   int ncells = 100;
@@ -208,7 +208,7 @@ int main(){
   double dt;
   // double dx;
 
-  double T_max = 0.012;
+  double T_max = 0.2;
     
   //Initialise mesh with reflective BC
   Mesh m(ncells, x_min, x_max, cfl, initial_test1, Trans_Left_Bound, Trans_Right_Bound, nGhost); 
@@ -217,45 +217,11 @@ int main(){
   std::string file_init = "initial_u";
   m.save_u_state(file_init,Exact_solver);
 
-  //std::cout << m.ptr_euler->gamma << std::endl;
-  //Apply BC() function
-  //m.applyBC();
-
-  //Print nGhost cells to check reflective BC
-  //  m.data[0].print();
-  //m.data[1].print();
-  //m.data[m.ncells].print();
-  //m.data[m.ncells+m.nGhost].print();
-  //Initialise mesh with transmissive BC
-
-  //Mesh grid(ncells, x_min, x_max, cfl, initial, Refl_Left_Bound, Refl_Right_Bound, nGhost); 
-  
-  //Print mesh to file
-  // std::string file_init = "initial_u";
-  // grid.save_u_state(file_init,Exact_solver);
-
-  //std::cout << m.ptr_euler->gamma << std::endl;
-  //ApplyBC() function
-  // grid.applyBC();
-
-  //Print nGhost cells to check reflective BC
-  //grid.data[0].print();
-  // grid.data[1].print();
-  //grid.data[m.ncells].print();
-  // grid.data[m.ncells+m.nGhost].print();
-  
-
-
-
-  //Calculate dt
-  //dt = m.Calculate_dt();
-
-  
-  //Print dt
-  //std::cout << "This is the time step dt: " << dt << "\n";
+    
+  //Initialise flux vector
   std::vector<Euler::U_state> flux(m.ncells+1);
  
-  
+  //Main loop over domain
   for(double i = 0; i<T_max; i+=dt){
     
     m.applyBC();
@@ -267,9 +233,9 @@ int main(){
     //std::cout << (*itflux).rho << "\t" << (*itflux).momentum << "\t" << (*itflux).energy << "\n";
     // }
 
-     for(int j = 29; j < 33; j++){
-          std::cout << flux[j].rho << "\t" << flux[j].momentum << "\t" << flux[j].energy << "\n";
-       }
+    //for(int j = 29; j < 33; j++){
+    //    std::cout << flux[j].rho << "\t" << flux[j].momentum << "\t" << flux[j].energy << "\n";
+    //   }
 
     std::cout << "\n "; 
     Mesh_update(m,flux,dt);
@@ -282,6 +248,5 @@ int main(){
   std::string output = "Output";
   m.save_w_state(output,Exact_solver);
   
-
 
 }

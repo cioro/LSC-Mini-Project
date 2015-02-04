@@ -121,9 +121,9 @@ void Mesh::applyBC(){
   }
 
   for(int i = 0; i < nGhost; i++ ){
-  Euler::W_state w_Right_End = ptr_euler -> PfromC(data[ncells+nGhost-i]);
+    Euler::W_state w_Right_End = ptr_euler -> PfromC(data[(ncells+nGhost-1)-i]);
   Euler::W_state w_BC_Right = boundary2(w_Right_End);
-  data[(nGhost + ncells+1)+i]= ptr_euler -> CfromP(w_BC_Right);
+  data[(nGhost + ncells)+i]= ptr_euler -> CfromP(w_BC_Right);
   }
 }
 
@@ -540,9 +540,9 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       dq_star_right_interface = right_interface[1].rho - right_interface[2].rho;
       dq_r_right_interface = right_interface[2].rho - right_interface[3].rho;
      
-
+      /*
       std::cout << "This is the " << i << " element" <<"\n";
-      // std::cout << "The ratios are r_L, r_star, r_R " << r_L<<"\t" << r_star << "\t" << r_R <<"\n";
+
       std::cout << "The 4 states at the interface are: " << "\n";
       U_state_L.print();
       U_state_L_star.print();
@@ -572,10 +572,10 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       right_interface[3].print();
       
       std::cout << "\n";
-
-      //std::cout << "The minmod lim m_l m_star m_r  " << minmod_l <<"\t" << minmod_star << "\t" << minmod_r <<"\n";
+      */
+   
      
-      /*
+      
       if(dq_l > 0){
 	if (c_L > 0){
 	  r_L = dq_l_left_interface/dq_l;
@@ -626,9 +626,8 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       superbee_star = superbee(r_star, fabs(c_star));
       superbee_r = superbee(r_R, fabs(c_R));
 
-     
-
-
+      std::cout << "The ratios are r_L, r_star, r_R " << r_L<<"\t" << r_star << "\t" << r_R <<"\n";
+      std::cout << "The minmod lim m_l m_star m_r  " << minmod_l <<"\t" << minmod_star << "\t" << minmod_r <<"\n";  
       //Compute intercell flux at i+1/2 (*itflux).rho, (*itflux).momentum, (*itflux).energy
       //For 1D N= 3, total number of waves
       (*itflux).rho = 0.5*(F_L.rho + F_R.rho) - 0.5* (sign(c_L)*minmod_l*(F_L_star.rho-F_L.rho) + \
@@ -642,12 +641,13 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       (*itflux).energy = 0.5*(F_L.energy + F_R.energy) - 0.5* (sign(c_L)*minmod_l*(F_L_star.energy-F_L.energy) + \
 						     sign(c_star)*minmod_star*(F_R_star.energy-F_L_star.energy) + \
 						     sign(c_R)*minmod_r*(F_R.energy-F_R_star.energy));
-      */
+     
       //For debugging use empty flux
-
+      /*
       (*itflux).rho = 0.0;
       (*itflux).momentum = 0.0;
       (*itflux).energy = 0.0;
+      */
       //---------------------//      
       itflux++;
   }
@@ -825,7 +825,7 @@ std::vector<Euler::U_state> HLLC_U_state(Euler::U_state U_state_L, Euler::U_stat
       U_state_R_star.rho = star_coef_right;
       U_state_R_star.momentum = star_coef_right*S_star;
       U_state_R_star.energy = star_coef_right*(U_state_R.energy/U_state_R.rho + (S_star - u_R)*(S_star + P_R/(rho_R*(S_R-u_R))));
-      U_interface[3]=U_state_R_star;
+      U_interface[2]=U_state_R_star;
 
       /* Consider overloading the + operator to write this in one line */
       // F_R_star.rho = F_R.rho + S_R*(U_state_R_star.rho -U_state_R.rho);
