@@ -9,7 +9,8 @@
 #include"Euler.hpp"
 
 //Initialises the parameters of the grid and fills the vector of primitives with the initial conditions
-Mesh::Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f)(double x), Euler::W_state (*b1)(Euler::W_state  w), Euler::W_state (*b2)(Euler::W_state w), int nGhost) : ncells(ncells), x_min(x_min),x_max(x_max),cfl(cfl), time(0), boundary1(b1), boundary2(b2), nGhost(nGhost)
+Mesh::Mesh(){};
+Mesh::Mesh(int Ancells, double Ax_min, double Ax_max,double Acfl, Euler::U_state (*f)(double x), Euler::W_state (*b1)(Euler::W_state  w), Euler::W_state (*b2)(Euler::W_state w), int AnGhost) : ncells(Ancells), x_min(Ax_min),x_max(Ax_max),cfl(Acfl), time(0), boundary1(b1), boundary2(b2), nGhost(AnGhost)
  { 
    ptr_euler = new Euler();
    dx = (x_max-x_min)/(double)ncells;
@@ -31,10 +32,9 @@ Mesh::Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f
      itdata++;
     
      }
-
-
-  
  }
+
+
 //Destructor
 Mesh::~Mesh()
 {
@@ -43,7 +43,23 @@ Mesh::~Mesh()
   delete axis;
   delete data2;*/
 }
+void Mesh::reset(Euler::U_state (*f)(double x)){
 
+  std::vector<Euler::U_state>::iterator itdata = data.begin()+nGhost;
+   std::vector<Euler::U_state>::iterator itdata2= data2.begin()+nGhost;
+   std::vector<double>::iterator itaxis= axis.begin()+nGhost;
+
+  
+   for(int i = 0; i<ncells; i++){
+     (*itaxis) = x_min + i*dx;
+     (*itdata) = f(*itaxis);
+  
+     itaxis++;
+     itdata++;
+    
+     }
+
+};
 //Prints vector of conserved variables to screen
 void Mesh::print()const
 {
@@ -65,7 +81,7 @@ void Mesh::save_u_state(std::string filename, Euler::U_state (*exact)(double x))
 {
   std::string dir = "data/";
   std::stringstream ss;
-  ss << dir << filename <<"_" << time;
+  ss << dir << filename << time;
   std::string tmppath = ss.str();
   
 
@@ -348,7 +364,7 @@ void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux, double dt){
 
 }
 
-std::vector<Euler::U_state> WAF(Mesh &m, double dt){
+std::vector<Euler::U_state> WAF(Mesh &m, double dt, std::string limiter){
  
   //Total vector of fluxes
   std::vector<Euler::U_state> flux(m.ncells+1);
@@ -586,6 +602,7 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       }
       else{
 	minmod_l = 0.0;
+	superbee_l = 0.0;
 	r_L = 0.0;
       }
 
@@ -600,6 +617,7 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
 	}
       else{
 	minmod_star = 0.0;
+	superbee_star = 0.0;
 	r_star = 0.0;
       }
 
@@ -614,6 +632,7 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
 	  }
 	  else{
 	    minmod_r = 0.0;
+	    superbee_r = 0.0;
 	    r_R = 0.0;
 	  } 
    
@@ -626,22 +645,44 @@ std::vector<Euler::U_state> WAF(Mesh &m, double dt){
       superbee_star = superbee(r_star, fabs(c_star));
       superbee_r = superbee(r_R, fabs(c_R));
 
-      std::cout << "The ratios are r_L, r_star, r_R " << r_L<<"\t" << r_star << "\t" << r_R <<"\n";
-      std::cout << "The minmod lim m_l m_star m_r  " << minmod_l <<"\t" << minmod_star << "\t" << minmod_r <<"\n";  
+       std::cout << "The ratios are r_L, r_star, r_R " << r_L<<"\t" << r_star << "\t" << r_R <<"\n";
+       std::cout << "The superbee lim m_l m_star m_r  " << superbee_l <<"\t" <<superbee_star << "\t" << superbee_r <<"\n";  
       //Compute intercell flux at i+1/2 (*itflux).rho, (*itflux).momentum, (*itflux).energy
       //For 1D N= 3, total number of waves
-      (*itflux).rho = 0.5*(F_L.rho + F_R.rho) - 0.5* (sign(c_L)*minmod_l*(F_L_star.rho-F_L.rho) + \
+      
+       if(limiter == std::string("minmod")){
+
+	 (*itflux).rho = 0.5*(F_L.rho + F_R.rho) - 0.5* (sign(c_L)*minmod_l*(F_L_star.rho-F_L.rho) + \
 						     sign(c_star)*minmod_star*(F_R_star.rho-F_L_star.rho) + \
 						     sign(c_R)*minmod_r*(F_R.rho-F_R_star.rho));
 
-      (*itflux).momentum = 0.5*(F_L.momentum + F_R.momentum) - 0.5* (sign(c_L)*minmod_l*(F_L_star.momentum-F_L.momentum) + \
+	 (*itflux).momentum = 0.5*(F_L.momentum + F_R.momentum) - 0.5* (sign(c_L)*minmod_l*(F_L_star.momentum-F_L.momentum) + \
 						     sign(c_star)*minmod_star*(F_R_star.momentum-F_L_star.momentum) + \
 						     sign(c_R)*minmod_r*(F_R.momentum-F_R_star.momentum));
 						     
-      (*itflux).energy = 0.5*(F_L.energy + F_R.energy) - 0.5* (sign(c_L)*minmod_l*(F_L_star.energy-F_L.energy) + \
+	 (*itflux).energy = 0.5*(F_L.energy + F_R.energy) - 0.5* (sign(c_L)*minmod_l*(F_L_star.energy-F_L.energy) + \
 						     sign(c_star)*minmod_star*(F_R_star.energy-F_L_star.energy) + \
 						     sign(c_R)*minmod_r*(F_R.energy-F_R_star.energy));
-     
+
+       } else  if(limiter == std::string("superbee")){
+	 (*itflux).rho = 0.5*(F_L.rho + F_R.rho) - 0.5* (sign(c_L)*superbee_l*(F_L_star.rho-F_L.rho) + \
+						     sign(c_star)*superbee_star*(F_R_star.rho-F_L_star.rho) + \
+						     sign(c_R)*superbee_r*(F_R.rho-F_R_star.rho));
+
+	 (*itflux).momentum = 0.5*(F_L.momentum + F_R.momentum) - 0.5* (sign(c_L)*superbee_l*(F_L_star.momentum-F_L.momentum) + \
+						     sign(c_star)*superbee_star*(F_R_star.momentum-F_L_star.momentum) + \
+						     sign(c_R)*superbee_r*(F_R.momentum-F_R_star.momentum));
+						     
+	 (*itflux).energy = 0.5*(F_L.energy + F_R.energy) - 0.5* (sign(c_L)*superbee_l*(F_L_star.energy-F_L.energy) + \
+						     sign(c_star)*superbee_star*(F_R_star.energy-F_L_star.energy) + \
+						     sign(c_R)*superbee_r*(F_R.energy-F_R_star.energy));
+
+       }else{
+	     std::cout << "no limiter speficied. Fail to compute WAF fluxes"<< "\n";
+	     (*itflux).rho = 0.0;
+	     (*itflux).momentum = 0.0;
+	     (*itflux).energy = 0.0;
+       }
       //For debugging use empty flux
       /*
       (*itflux).rho = 0.0;
@@ -689,8 +730,8 @@ double superbee(double r, double c){
     return 1;
   }
   else{
-    double top = (1-c)*r*(1+r);
-    return (1 - top/(1-r));
+    double top = (1-c)*2*r;
+    return (1 - top/(1+r));
   }
 
 }

@@ -40,6 +40,7 @@ public:
   std::vector<Euler::U_state> data2;
 
   //Constructor
+  Mesh();
   Mesh(int ncells, double x_min, double x_max,double cfl, Euler::U_state (*f)(double x),Euler::W_state (*b1)(Euler::W_state w), Euler::W_state (*b2)(Euler::W_state w), int nGhost);
   ~Mesh();
   //print to screen and print to file
@@ -53,6 +54,7 @@ public:
   //Calculate dt 
   double Calculate_dt();
 
+  void reset(Euler::U_state (*f)(double x));
   // //Mesh update
   //  //  void Mesh_update(Mesh &m, std::vector<Euler::U_state> &flux,double dt);
 };
@@ -61,7 +63,7 @@ std::vector<Euler::U_state> HLLC(Mesh &m);
 
 
 //TVD WAF
-std::vector<Euler::U_state> WAF(Mesh &m,double dt);
+std::vector<Euler::U_state> WAF(Mesh &m,double dt,std::string limiter);
 std::vector<Euler::U_state> HLLC_U_state(Euler::U_state U_state_L, Euler::U_state U_state_R);
 //Limiter fcns
 double minmod(double r, double c);
